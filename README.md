@@ -1,4 +1,4 @@
-# mxknowledge
+# m3knowledge
 
 ## Project setup
 ```
