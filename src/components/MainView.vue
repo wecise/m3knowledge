@@ -1,11 +1,11 @@
 <template>
 
-  <AppView ></AppView>
+  <KnowledgeView ></KnowledgeView>
   
 </template>
 
 <script>
-import AppView from './app/AppView';
+import KnowledgeView from './knowledge/index';
 
 
 export default {
@@ -14,7 +14,7 @@ export default {
     global: Object
   },
   components:{
-    AppView
+    KnowledgeView
   }
 }
 </script>
