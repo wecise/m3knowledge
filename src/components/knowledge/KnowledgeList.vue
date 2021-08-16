@@ -8,11 +8,11 @@
                 @click="onFilter(key)" 
                 style="margin:5px;">{{ key | pickParentName}}({{ item.length }})</el-button>
         </el-header>
-        <el-main style="height:100%;padding:10px 0px 0px 0px;">
+        <el-main style="height:100%;padding:10px 10px 0px 0px;">
                 <div v-for="(item, index) in knowledge.list" :key="index">
-                    <template v-if="item.ftype!='dir'">
+                    <template v-if="item && item.ftype!='dir'">
                         <el-card shadow="hover" v-if="item.ftype=='md'">
-                            <el-button type="text" @click="$root.onOpen(item)"><h4>{{item.name}}</h4></el-button>
+                            <el-button type="text" @click="onOpen(item)"><h4>{{item.name}}</h4></el-button>
                             <div style="display: flex;
                                         height: auto;
                                         line-height: 40px;
@@ -33,7 +33,7 @@
                             </div>
                         </el-card>
                         <el-card shadow="hover" v-else>
-                            <el-button type="text" @click="$root.onOpen(item)"><h4>{{item.name}}</h4></el-button>
+                            <el-button type="text" @click="onOpen(item)"><h4>{{item.name}}</h4></el-button>
                             <div style="display: flex;
                                         height: auto;
                                         line-height: 40px;
@@ -54,7 +54,7 @@
                             </div>
                         </el-card>
                     </template>
-                    <el-divider></el-divider>
+                    
                 </div>
         </el-main>
     </el-container>
@@ -168,6 +168,9 @@ export default {
                     return _.extend(v,{content:''});
                 }
             })
+        },
+        onOpen(item){
+            this.$emit("open-doc",item);
         }
 
     }

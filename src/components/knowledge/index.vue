@@ -10,10 +10,10 @@
                 <el-button slot="append" type="primary" icon="el-icon-search" @click="onSearch"></el-button>
             </el-input>
         </el-header>
-        <el-main style="padding:0px;">
+        <el-main style="padding:0px;overflow: hidden;">
             <el-container style="height:100%;">
                 <el-main style="padding:0px;overflow:hidden;" ref="mainView">
-                    <KnowledgeList :model="search.result" ref="viewListRef" v-if="search.result"></KnowledgeList>
+                    <KnowledgeList :model="search.result" ref="viewListRef" @open-doc="onOpen"  v-if="search.result"></KnowledgeList>
                     <div v-else>
                         <h4>很抱歉，没有找到与 {{search.term}} 相关的记录。</h4>
                         <p>温馨提示：  
@@ -25,15 +25,31 @@
                 <el-aside style="width:300px;overflow:hidden;background:#f2f2f2;margin:0px -10px 0px 10px;" ref="leftView">
                     <el-container style="height:100%;">
                         <el-header style="height:200px;line-height:200px;padding:0px;">
-                            <KnowledgeTopN ref="topn"></KnowledgeTopN>
+                            <KnowledgeTopN @open-doc="onOpen"></KnowledgeTopN>
                         </el-header>
                         <el-main style="padding:0px;">
-                            <KnowledgeTree ref="tree"></KnowledgeTree>
+                            <KnowledgeTree @open-doc="onOpen"></KnowledgeTree>
                         </el-main>
                     </el-container>
                 </el-aside>
             </el-container>
         </el-main>
+        <el-dialog :title="dialog.open.data.name" 
+                :visible.sync="dialog.open.show" 
+                :destroy-on-close="true"
+                :append-to-body="true"
+                custom-class="knowledge-view-dialog"
+                 width="80%"
+                 center
+                v-if="dialog.open.show">
+                <template v-if="dialog.open.data">
+                    <KnowledgeView :model="dialog.open.data" v-if="['md','log','txt','svg'].includes(dialog.open.data.ftype)"></KnowledgeView>
+                    <KnowledgeViewPdf :model="dialog.open.data" v-else-if="['pdf'].includes(dialog.open.data.ftype)"></KnowledgeViewPdf>
+                    <KnowledgeViewPic :model="dialog.open.data" v-else-if="['png','gif','jpg','jpeg'].includes(dialog.open.data.ftype)"></KnowledgeViewPic>
+                    <KnowledgeViewMedia :model="dialog.open.data" v-else-if="['mov','mp3','mp4','wav','swf'].includes(dialog.open.data.ftype)"></KnowledgeViewMedia>
+                    <KnowledgeViewOther :model="dialog.open.data" v-else></KnowledgeViewOther>
+                </template>
+        </el-dialog>
     </el-container>    
 </template>
 
@@ -42,13 +58,23 @@ import _ from 'lodash';
 import KnowledgeTopN from './KnowledgeTopn';
 import KnowledgeTree from './KnowledgeTree';
 import KnowledgeList from './KnowledgeList';
+import KnowledgeView from './KnowledgeView';
+import KnowledgeViewPdf from './KnowledgeViewPdf';
+import KnowledgeViewMedia from './KnowledgeViewMedia';
+import KnowledgeViewPic from './KnowledgeViewPic';
+import KnowledgeViewOther from './KnowledgeViewOther';
 
 export default {
     name: 'index',
     components: {
         KnowledgeList,
         KnowledgeTopN,
-        KnowledgeTree
+        KnowledgeTree,
+        KnowledgeView,
+        KnowledgeViewPdf,
+        KnowledgeViewMedia,
+        KnowledgeViewPic,
+        KnowledgeViewOther
     },
     data(){
         return {
@@ -57,6 +83,11 @@ export default {
                 term: "",
                 result: [],
                 loading: true
+            },
+            dialog: {
+                open: {
+                    show: false
+                } 
             }
         }
     },
@@ -66,6 +97,9 @@ export default {
                 this.onClear();
             }
         }
+    },
+    computed:{
+
     },
     mounted() {
         this.onSearch();
@@ -94,180 +128,32 @@ export default {
             this.onSearch();
         },
         onOpen(data){
-            /* try{
-                if(_.includes(['md','txt','log'],data.ftype)){
-                    
-                    let wnd = null;
+            
+            this.dialog.open.data = data;
+            this.dialog.open.show = true;
 
-                    try{
-                        if(jsPanel.activePanels.getPanel(`jsPanel-${data.name}`)){
-                            jsPanel.activePanels.getPanel(`jsPanel-${data.name}`).close();
-                        }
-                    } catch(error){
-
-                    }
-                    finally{
-                        wnd = maxWindow.winApp(data.name, `<div id="mdView"></div>`, null,null);
-                    }
-
-                    new Vue({
-                        delimiters: ['#{', '}#'],
-                        data: {
-                            model: null,
-                            item: data
-                        },
-                        template: `<el-container style="width:100%;height:100%;">
-                                        <el-main style="overflow:hidden;padding:0px;">
-                                            <knowledge-view :model="model" ref="viewRef" v-if="!_.isEmpty(model)"></knowledge-view>
-                                        </el-main>
-                                        <el-footer style="height:30px;line-height:30px;">
-                                            <span><i class="el-icon-user"></i> #{item.author}#</span>
-                                            <el-divider direction="vertical"></el-divider>
-                                            编辑于 #{ item | pickTime }#
-                                        </el-footer>
-                                    </el-container>`,
-                        filters:{
-                            pickTime(item){
-
-                                try{
-                                    let mtime = item.mtime;
-                                    return moment(mtime).format(mx.global.register.format);
-                                } catch(err){
-                                    return moment(item.vtime).format(mx.global.register.format);
-                                }
-                            }
-                        },
-                        created(){
-                            this.model = {item:data, content:fsHandler.fsContent(data.parent, data.name)};
-                        }
-                    }).$mount("#mdView");
-                    
-                } else if(_.includes(['pdf'],data.ftype)){
-                    let contents = `<section class="is-vertical el-container" style="width:100%;height:100%;">
-                                        <main class="el-main" style="overflow:hidden;padding:0px;">
-                                            <iframe src="/fs${data.fullname}?type=open&issys=${window.SignedUser_IsAdmin}" style="width: 100%;height: 100%;" frameborder="0"></iframe>
-                                        </main>
-                                        <footer class="el-footer" style="height:30px;line-height:30px;"></footer>
-                                    </section>`;
-
-                    let wnd = maxWindow.winApp(data.name, contents, null,null);
-                } else if(_.includes(['png','gif','jpg','jpeg'],data.ftype)){
-                    
-                    let wnd = maxWindow.winApp(data.name, `<div id="picView"></div>`, null,null);
-                    new Vue({
-                        delimiters: ['#{', '}#'],
-                        data: {
-                            item: data,
-                            loading: true,
-                            url: `/fs${data.fullname}?type=open&issys=${window.SignedUser_IsAdmin}`,
-                            srcList: [`/fs${data.fullname}?type=open&issys=${window.SignedUser_IsAdmin}`]
-                        },
-                        template: `<el-container style="width:100%;height:100%;">
-                                        <el-main style="overflow:hidden;background:#333333;">
-                                            <el-image 
-                                                v-loading="loading"
-                                                style="width: 100%; height: 100%"
-                                                :src="url" 
-                                                :preview-src-list="srcList"
-                                                @load="loading=false"
-                                                @error="loading=false">
-                                            </el-image>
-                                        </el-main>
-                                        <el-footer style="height:30px;line-height:30px;">
-                                            <span><i class="el-icon-user"></i> #{item.author}#</span>
-                                            <el-divider direction="vertical"></el-divider>
-                                            编辑于 #{ item | pickTime }#
-                                        </el-footer>
-                                    </el-container>`,
-                        filters:{
-                            pickTime(item){
-
-                                try{
-                                    let mtime = item.mtime;
-                                    return moment(mtime).format(mx.global.register.format);
-                                } catch(err){
-                                    return moment(item.vtime).format(mx.global.register.format);
-                                }
-                            }
-                        },
-                        created(){
-                            this.model = {item:data, content:fsHandler.fsContent(data.parent, data.name)};
-                        }
-                    }).$mount("#picView");
-
-                } else if(_.includes(['mov','mp3','mp4','wav','swf'],data.ftype)){
-                    
-                    let wnd = maxWindow.winApp(data.name, `<div id="movView"></div>`, null,null);
-
-                    new Vue({
-                        delimiters: ['#{', '}#'],
-                        data: {
-                            item: data,
-                            url: `/fs${data.fullname}?type=open&issys=${window.SignedUser_IsAdmin}`
-                        },
-                        template: `<el-container style="width:100%;height:100%;">
-                                        <el-main style="overflow:hidden;background:#333333;">
-                                            <video :src="url" width="100%" height="100%" 
-                                                controls="controls" autoplay
-                                                style="background-image: url(/fs/assets/images/files/png/matrix.png?type=open&issys=true);
-                                                        background-repeat: no-repeat;
-                                                        background-position-x: center;
-                                                        background-position-y: center;">
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        </el-main>
-                                        <el-footer style="height:30px;line-height:30px;">
-                                            <span><i class="el-icon-user"></i> #{item.author}#</span>
-                                            <el-divider direction="vertical"></el-divider>
-                                            编辑于 #{ item | pickTime }#
-                                        </el-footer>
-                                    </el-container>`,
-                        filters:{
-                            pickTime(item){
-
-                                try{
-                                    let mtime = item.mtime;
-                                    return moment(mtime).format(mx.global.register.format);
-                                } catch(err){
-                                    return moment(item.vtime).format(mx.global.register.format);
-                                }
-                            }
-                        },
-                        created(){
-                            this.model = {item:data, content:fsHandler.fsContent(data.parent, data.name)};
-                        }
-                    }).$mount("#movView");
-
+            // 更新rate
+            try{
+                let attr = null;
+                
+                if(_.isEmpty(data.attr)){
+                    attr = {remark: '', rate:1};
                 } else {
-                    let url = `/fs${data.fullname}?type=download&issys=true`;
-                    window.open(url,"_blank");
-                }
-            } catch(err){
-
-            } finally{
-                // 更新rate
-                try{
-                    let attr = null;
-                    
-                    if(_.isEmpty(data.attr)){
-                        attr = {remark: '', rate:1};
+                    attr = _.attempt(JSON.parse.bind(null, data.attr));
+                    if(attr.rate){
+                        _.extend(attr, {rate:attr.rate + 1});    
                     } else {
-                        attr = _.attempt(JSON.parse.bind(null, data.attr));
-                        if(attr.rate){
-                            _.extend(attr, {rate:attr.rate + 1});    
-                        } else {
-                            _.extend(attr, {rate:1}); 
-                        }
+                        _.extend(attr, {rate:1}); 
                     }
-                    
-                    fsHandler.fsUpdateAttrAsync(data.parent,data.name,attr).then((rtn)=>{
-                        this.onSearch();
-                    });
-                    
-                } catch(err){
-
                 }
-            } */
+                
+                /* fsHandler.fsUpdateAttrAsync(data.parent,data.name,attr).then((rtn)=>{
+                    this.onSearch();
+                }); */
+                
+            } catch(err){
+                console.error(err);
+            }
 
         }
     }
@@ -276,4 +162,10 @@ export default {
 
 <style scoped>
 
+</style>
+
+<style>
+    .knowledge-view-dialog.el-dialog{
+        margin-top: 0!important;
+    }
 </style>

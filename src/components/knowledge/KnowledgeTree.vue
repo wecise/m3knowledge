@@ -333,13 +333,13 @@ export default {
             
         },
         onDownload(item,index){
-            let url = `/fs/${item.fullname}?type=download&issys=true`;
+            let url = `/static${item.fullname}`;
             window.open(url,"_blank");
         },
         onFilterNode:_.debounce(function(value, data) {
             if (!value) return true;
             try{
-                this.m3.callFS("/matrix/fs/getFsByTerm.js", encodeURIComponent(value)).then((rtn)=>{
+                this.m3.callFS("/matrix/m3knowledge/getFsByTerm.js", encodeURIComponent(value)).then((rtn)=>{
                     this.treeData = rtn.message;
                 });
             } catch(err){
@@ -353,13 +353,13 @@ export default {
                 if(!data.isdir) {
                     
                     // 打开操作
-                    this.$root.onOpen(data);
+                    this.$emit("open-doc",data);
 
                 } 
                 // 目录
                 else {
                     this.m3.dfsList({fullname:data.fullname}).then((rtn)=>{
-                        this.$set(data, 'children', rtn);
+                        this.$set(data, 'children', rtn.message);
                     });
                 }
             } catch(err){

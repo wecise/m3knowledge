@@ -64,7 +64,7 @@ export default {
             
         },
         onOpen(data){
-            this.$root.onOpen(data);
+            this.$emit("open-doc",data);
         }
     },
     beforeDestroy() {
