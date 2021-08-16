@@ -9,7 +9,7 @@
                 style="margin:5px;">{{ key | pickParentName}}({{ item.length }})</el-button>
         </el-header>
         <el-main style="height:100%;padding:10px 10px 0px 0px;">
-                <div v-for="(item, index) in knowledge.list" :key="index">
+                <div v-for="(item, index) in knowledge.list" :key="index" style="margin: 5px;">
                     <template v-if="item && item.ftype!='dir'">
                         <el-card shadow="hover" v-if="item.ftype=='md'">
                             <el-button type="text" @click="onOpen(item)"><h4>{{item.name}}</h4></el-button>

@@ -10,7 +10,7 @@
                 <el-button slot="append" type="primary" icon="el-icon-search" @click="onSearch"></el-button>
             </el-input>
         </el-header>
-        <el-main style="padding:0px;overflow: hidden;">
+        <el-main style="padding:0px;overflow: hidden;background-color:#f2f2f2;">
             <el-container style="height:100%;">
                 <el-main style="padding:0px;overflow:hidden;" ref="mainView">
                     <KnowledgeList :model="search.result" ref="viewListRef" @open-doc="onOpen"  v-if="search.result"></KnowledgeList>
@@ -28,7 +28,7 @@
                             <KnowledgeTopN @open-doc="onOpen"></KnowledgeTopN>
                         </el-header>
                         <el-main style="padding:0px;">
-                            <KnowledgeTree @open-doc="onOpen"></KnowledgeTree>
+                            <KnowledgeTree @open-doc="onOpen" @init="onInit"></KnowledgeTree>
                         </el-main>
                     </el-container>
                 </el-aside>
@@ -38,9 +38,11 @@
                 :visible.sync="dialog.open.show" 
                 :destroy-on-close="true"
                 :append-to-body="true"
+                :close-on-click-modal="false"
+                :close-on-press-escape="false"
+                width="80%"
+                center
                 custom-class="knowledge-view-dialog"
-                 width="80%"
-                 center
                 v-if="dialog.open.show">
                 <template v-if="dialog.open.data">
                     <KnowledgeView :model="dialog.open.data" v-if="['md','log','txt','svg'].includes(dialog.open.data.ftype)"></KnowledgeView>
@@ -98,13 +100,13 @@ export default {
             }
         }
     },
-    computed:{
-
-    },
     mounted() {
         this.onSearch();
     },
     methods: {
+        onInit(data){
+            this.model = data;
+        },
         onSearch(){
             try{
                 this.m3.callFS("/matrix/m3knowledge/searchByTerm.js",encodeURIComponent(this.search.term)).then((rt)=>{

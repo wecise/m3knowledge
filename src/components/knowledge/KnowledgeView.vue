@@ -1,10 +1,12 @@
 <template>
-    <el-container>
-        <el-main style="background: #f2f2f2;" v-if="doc">
-            <mavonEditor v-model="doc.content" style="height: 100%"></mavonEditor>
+    <el-container v-if="ready">
+        <el-main style="background: #f2f2f2;">
+            <mavonEditor v-model="doc.content" style="height: 100%" @save="onSave" v-if="doc.content"></mavonEditor>
         </el-main>
         <el-footer style="height:30px;line-height:30px;">
-            <span><i class="el-icon-user"></i> {{doc.author}}</span>
+            <span>
+                <i class="el-icon-user"></i> {{doc.author}}
+            </span>
             <el-divider direction="vertical"></el-divider>
             编辑于 {{ doc | pickTime }}
         </el-footer>
@@ -21,18 +23,14 @@ export default {
     props: {
         model: Object
     },
-    components: {
-        mavonEditor
-    },
     data(){
         return {
-            mode:"view",
-            doc: {},
-            tip: {
-                message: "",
-                loading: false
-            }
+            ready: false,
+            doc: null
         }
+    },
+    components: {
+        mavonEditor
     },
     filters:{
         pickTime(item){
@@ -42,35 +40,24 @@ export default {
             } catch(err){
                 return window.moment(item.vtime).format(window.global.register.format);
             }
-        },
-        pickName(name){
-            try{
-                return _.head(name.split(".md"));
-            } catch(err){
-                return name;
-            }
         }
     },
     created(){
         this.doc = this.model;
-        this.m3.dfsRead({parent:this.model.parent, name: this.model.name}).then(res=>{
-                _.extend(this.doc, {content:res});
-            }).catch(err=>{
-                console.error(err)
-            })
+        this.m3.dfsRead({parent: this.doc.parent, name: this.doc.name}).then(res=>{
+            this.ready = true;
+            return _.extend(this.doc, {content:res});
+        })
     },
     methods: {
-        onSaveNow(){
-            this.tip.loading = true;
-            this.tip.message = "更新中...";
-
+        onSave(value,renderValue){
             try{
                 let attr = null;
                 
-                if(_.isEmpty(this.model.item.attr)){
+                if(_.isEmpty(this.doc.attr)){
                     attr = {remark: '', rate:1};
                 } else {
-                    attr = _.attempt(JSON.parse.bind(null, this.model.item.attr));
+                    attr = _.attempt(JSON.parse.bind(null, this.doc.attr));
                     if(attr.rate){
                         _.extend(attr, {rate:attr.rate + 1});    
                     } else {
@@ -78,29 +65,22 @@ export default {
                     }
                 }
                 
-                /* fsHandler.fsNewAsync(this.model.item.ftype, this.model.item.parent, this.model.item.name, this.editor.getValue(), attr).then( (rtn)=>{
-                    if(rtn == 1){
-                        this.tip.message = "更新成功";
-                    } else {
-                        this.tip.message = "更新失败";
-                    }
+                let param = {
+                    parent: this.doc.parent, name: this.doc.name, 
+                    data: { content: value, ftype: this.doc.ftype, attr: attr, index: true }    
+                };
 
-                    setTimeout(()=>{
-                        this.tip.message = "";
-                        this.tip.loading = false;
-                    },1000)
-                } ); */
+                this.m3.dfsWrite(param).then( rtn=>{
+                    this.$message.success("提交成功");
+                }).catch(err=>{
+                    this.$message.error("提交失败，请确认。");
+                });
                 
             } catch(err){
                 console.error(err);
             }
             
-        },
-        onSave: _.debounce(function(){
-                    const self = this;
-                    self.tip.loading = true;
-                    self.onSaveNow();
-                },3000)
+        }
     }
 
 }

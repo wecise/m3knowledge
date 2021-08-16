@@ -6,8 +6,8 @@
             </span>
             <span style="width:60%;text-align:right;">
                 <el-button type="text" @click="initData" icon="el-icon-refresh"></el-button>
-                <el-button type="text" @click="onNewDir({'fullname':root})" icon="el-icon-folder-add"></el-button>
-                <el-button type="text" @click="onNewFile({'fullname':root})" icon="el-icon-plus"></el-button>
+                <el-button type="text" @click="onNewDir({'parent':root})" icon="el-icon-folder-add"></el-button>
+                <el-button type="text" @click="onNewFile({'parent':root})" icon="el-icon-plus"></el-button>
             </span>
         </el-header>
         <el-main style="padding:0px 10px; height: 100%;overflow-x:hidden;">
@@ -53,6 +53,36 @@
                 </span>   
             </el-tree>
         </el-main>
+        <el-dialog title="上传" 
+            :visible.sync="dialog.upload.show" 
+            :destroy-on-close="true"
+            :append-to-body="true"
+            :close-on-click-modal="false"
+            :close-on-press-escape="false"
+            width="40%"
+            center
+            custom-class="knowledge-upload-dialog"
+            v-if="dialog.upload.show">
+            <el-container>
+                <el-main style="text-align: center;">
+                    <el-upload drag
+                        multiple
+                        :action="dialog.upload.url"
+                        :data="dialog.upload.ifIndex"
+                        :on-success="onUploadSuccess"
+                        :on-error="onUploadError"
+                        :on-remove="onUploadRemove"
+                        :list-type="text"
+                        :show-file-list="true"
+                        name="uploadfile">
+                        <i class="el-icon-upload"></i>
+                    </el-upload>
+                </el-main>
+                <el-footer>
+                    <i class="fas fa-clock"></i> 上传文件：{{dialog.upload.fileList.length}}
+                </el-footer>
+            </el-container>
+    </el-dialog>
     </el-container>
 </template>
 
@@ -69,7 +99,15 @@ export default {
             },
             treeData: [],
             root: `/opt/knowledge`,
-            filterText: ""
+            filterText: "",
+            dialog: {
+                upload: {
+                    show: false,
+                    url: '',
+                    fileList: [],
+                    ifIndex: {index:true}
+                } 
+            }
         }
     },
     filters: {
@@ -104,13 +142,14 @@ export default {
             if(_.isEmpty(index)){
                 this.initData();
             } else {
-                this.m3.dfsList(item.fullname).then((rtn)=>{
-                    this.$set(item, 'children', rtn);
+                this.m3.dfsList(item.fullname).then(rtn=>{
+                    this.$set(item, 'children', rtn.message);
                 });
             }
         
         },
         onNewDir(item,index){
+
             this.$prompt('请输入目录名称', '提示', {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消'
@@ -124,33 +163,36 @@ export default {
                     return false;
                 }
 
-                let _attr = {remark: '', rate: 0};
+                let ftype = 'dir';
+                let attr = {remark: '', rate: 0};
 
-                /* fsHandler.fsNewAsync('dir', item.fullname, value, null, _attr).then((rtn)=>{
-                    if(rtn == 1){
-                        this.$message({
-                            type: "success",
-                            message: "新建目录成功！"
-                        })
+                let param = {
+                    parent: item.parent, name: value, 
+                    data: { content: '', ftype: ftype, attr: attr, index: true }    
+                };
 
-                        // 刷新
-                        this.onRefresh(item,index);
+                this.m3.dfsWrite(param).then((rtn)=>{
+                    this.$message({
+                        type: "success",
+                        message: "新建目录成功！"
+                    })
 
-                    } else {
-                        this.$message({
-                            type: "error",
-                            message: "新建目录失败，" + rtn.message
-                        })
-                    }
-                }); */
+                    // 刷新
+                    this.onRefresh(item,index);
+                        
+                }).catch(err=>{
+                    this.$message({
+                        type: "error",
+                        message: "新建目录失败，" + err
+                    })
+                });
                 
-                
-                }).catch(() => {
+            }).catch(() => {
                 this.$message({
                     type: 'info',
-                    message: '取消输入'
+                    message: '取消新建目录操作'
                 });       
-                });
+            });
             
         },
         onNewFile(item,index){
@@ -158,6 +200,7 @@ export default {
                 confirmButtonText: '确定',
                 cancelButtonText: '取消'
                 }).then(({ value }) => {
+
                 if(_.isEmpty(value)){
                     this.$message({
                         type: 'warning',
@@ -166,38 +209,43 @@ export default {
                     return false;
                 }
 
-                let _attr = {remark: '', rate: 0};
+                this.m3.callFS("/matrix/m3knowledge/getDefaultContent.js",null).then(rtn=>{
+                    
+                    let ftype = 'md';
+                    let attr = {remark: '', rate: 0};
+                    let name = [value,ftype].join(".");
 
-                this.m3.callFS("/matrix/m3knowledge/getDefaultContent.js",null).then((rtn)=>{
-                    let content = rtn.message;
+                    let param = {
+                        parent: item.fullname, name: name, 
+                        data: { content: rtn.message, ftype: ftype, attr: attr, index: true }    
+                    };
 
-                    /* fsHandler.fsNewAsync('md', item.fullname, [value,'md'].join("."), content, _attr).then((rt)=>{
-                        if(rt == 1){
-                            this.$message({
-                                type: "success",
-                                message: "新建成功！"
-                            })
+                    this.m3.dfsWrite(param).then(res=>{
+                        
+                        this.$message({
+                            type: "success",
+                            message: "新建成功！"
+                        })
 
-                            // 刷新
-                            this.onRefresh(item,index);
+                        // 刷新
+                        this.onRefresh(item,index);
 
-                        } else {
-                            this.$message({
-                                type: "error",
-                                message: "新建失败，" + rt.message
-                            })
-                        }
-                    }); */
+                    }).catch(err=>{
+                        this.$message({
+                            type: "error",
+                            message: "新建失败，" + err
+                        })
+                    })
                 
-                });
+                })
 
                 
-                }).catch(() => {
+            }).catch(() => {
                 this.$message({
                     type: 'info',
-                    message: '取消输入'
+                    message: '取消新建文件操作'
                 });       
-                });
+            });
         },
         onDelete(item,index){
             
@@ -207,34 +255,30 @@ export default {
                 type: 'warning'
             }).then(() => {
                 
-                this.m3.dfsDelete({parent:item.parent,name:item.name}).then((rtn)=>{
-                    if(rtn == 1){
-                        this.$message({
-                            type: "success",
-                            message: "删除成功！"
+                this.m3.dfsDelete({parent:item.parent,name:item.name}).then(rtn=>{
+                    
+                    this.$message({
+                        type: "success",
+                        message: "删除成功！"
+                    })
+                    
+                    // 刷新
+                    try{
+                        this.m3.dfsList({fullname:item.parent}).then(res=>{
+                            let childrenData = res.message;
+                            let parent = this.$refs.tree.getNode(item.parent)
+                            this.$set(parent.data, 'children', childrenData);
                         })
-                        
-                        // 刷新
-                        try{
-                            this.m3.dfsList({fullname:item.parent}).then(res=>{
-                                let childrenData = res.message;
-                                let parent = this.$refs.tree.getNode(item.parent)
-                                this.$set(parent.data, 'children', childrenData);
-                            })
-                            
-                        } catch(err){
-                            this.initData();
-                        }
-                        
-                        
-
-                    } else {
-                        this.$message({
-                            type: "error",
-                            message: "删除失败！"
-                        })
+                    } catch(err){
+                        this.initData();
                     }
-                });
+                        
+                }).catch(err=>{
+                    this.$message({
+                        type: "error",
+                        message: "删除失败，" + err
+                    })
+                })
                 
 
             }).catch((err) => {
@@ -242,94 +286,40 @@ export default {
             });
         },
         onUpload(item,index){
-            /* const self = this;
-
-            let wnd = null;
-            let wndID = `jsPanel-upload-${objectHash.sha1(item.id)}`;
-
-            try{
-                if(jsPanel.activePanels.getPanel(wndID)){
-                    jsPanel.activePanels.getPanel(wndID).close();
-                }
-            } catch(error){
-
-            }
-            finally{
-                wnd = maxWindow.winUpload('文件上传', `<div id="${wndID}"></div>`, null, null);
-            }
+            this.dialog.upload.data = item;
+            this.dialog.upload.data.url = `/fs${item.fullname}?issys=true`;
+            this.dialog.upload.show = true;
+        },
+        onUploadSuccess(res,file,FileList){
+            this.dialog.upload.fileList = FileList;
             
-            new Vue({
-                delimiters: ['#{', '}#'],
-                template:   `<el-container>
-                                <el-main>
-                                    <el-upload drag
-                                        multiple
-                                        show-file-list="false"
-                                        :action="upload.url"
-                                        :data="upload.ifIndex"
-                                        :on-success="onSuccess"
-                                        :on-error="onError"
-                                        :before-upload="onBeforeUpload"
-                                        :on-remove="onRemove"
-                                        list-type="text"
-                                        name="uploadfile">
-                                        <i class="el-icon-upload"></i>
-                                    </el-upload>
-                                </el-main>
-                                <el-footer>
-                                    <i class="fas fa-clock"></i> 上传文件：#{upload.fileList.length}# 
-                                </el-footer>
-                            </el-container>`,
-                data: {
-                    upload: {
-                        url: `/fs${item.fullname}?issys=true`,
-                        fileList: [],
-                        ifIndex: {index:true}
-                    }
-                },
-                methods: {
-                    onBeforeUpload(file){
-                        
-                    },
-                    onSuccess(res,file,FileList){
-                        this.upload.fileList = FileList;
-                        
-                        _.forEach(FileList,(v)=>{
-                            let attr = {remark: '', rate:0};
-                            fsHandler.fsUpdateAttrAsync(item.parent, v.name, attr);
-                        })
+           /*  _.forEach(FileList,(v)=>{
+                let attr = {remark: '', rate:0};
+                fsHandler.fsUpdateAttrAsync(item.parent, v.name, attr);
+            }) */
 
-                        // 刷新
-                        self.onRefresh(item,index);
+            // 刷新
+            this.onRefresh(this.dialog.upload.data, null);
 
-                        this.$message({
-                            type: "success",
-                            dangerouslyUseHTMLString: true,
-                            message: `上传成功！`
-                        })
+            this.$message({
+                type: "success",
+                dangerouslyUseHTMLString: true,
+                message: `上传成功！`
+            })
 
-                    },
-                    onError(res,file,FileList){
-                        this.$message({
-                            type: "error",
-                            dangerouslyUseHTMLString: true,
-                            message: `上传失败，请确认！`
-                        })
-                    },
-                    onRemove(file, fileList) {
-                        fsHandler.fsDeleteAsync(item.fullname,file.name).then((rtn)=>{
-                            if(rtn == 1){
-                                // 刷新
-                                self.onRefresh(item,index);
-                            }
-                        });
-                        
-                    },
-                    onPreview(file) {
-                        
-                    }
-                }
-            }).$mount(`#${wndID}`); */
+        },
+        onUploadError(){
+            this.$message({
+                type: "error",
+                dangerouslyUseHTMLString: true,
+                message: `上传失败，请确认！`
+            })
+        },
+        onUploadRemove(file, fileList) {
+            
+            this.m3.dfsDelete({parent:this.dialog.upload.data.parent, name:file.name}).then(rtn=>{
+                this.onRefresh(this.dialog.upload.data,null);
+            });
             
         },
         onDownload(item,index){
@@ -375,8 +365,9 @@ export default {
                 });
                 
                 try{
-                    // let childrenData = fsHandler.fsList(this.treeData[2].fullname);
-                    // this.$set(this.treeData[2], 'children', childrenData);
+                    this.m3.dfsList(this.treeData[2].fullname).then(res=>{
+                        this.$set(this.treeData[2], 'children', res.message);
+                    });
 
                     // 默认首页
                     let homeNode = _.find(this.treeData,{name: '知识通介绍.md'}) || _.find(_.flattenDeep(_.map(this.treeData,'children')),{name: '知识通介绍.md'});
@@ -387,13 +378,12 @@ export default {
                         });
                     })
                     
-                    
                     this.m3.dfsRead({parent:homeNode.parent, name:homeNode.name}).then(res=>{
-                        this.$root.model = {item:homeNode, content: res.message};
+                        this.$emit("init",{item:homeNode, content: res.message});
                     })
 
                 } catch(err){
-                    this.$root.model = null;
+                    this.$emit("init",null);
                 }
             });
             
