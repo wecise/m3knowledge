@@ -293,10 +293,10 @@ export default {
         onUploadSuccess(res,file,FileList){
             this.dialog.upload.fileList = FileList;
             
-           /*  _.forEach(FileList,(v)=>{
+            _.forEach(FileList,(v)=>{
                 let attr = {remark: '', rate:0};
-                fsHandler.fsUpdateAttrAsync(item.parent, v.name, attr);
-            }) */
+                this.m3.dfsUpdateAttr({parent:item.parent, name:v.name, attr:attr});
+            })
 
             // 刷新
             this.onRefresh(this.dialog.upload.data, null);

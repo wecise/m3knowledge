@@ -1,7 +1,12 @@
 <template>
     <el-container>
         <el-main v-if="model">
-            <iframe :src="src" style="width: 100%;height: 100%;border: 1px solid #333;" frameborder="0"></iframe>
+            <el-image 
+                v-loading="loading"
+                :src="src"
+                @load="loading=false"
+                @error="loading=false">
+            </el-image>
         </el-main>
         <el-footer style="height:30px;line-height:30px;">
             <span><i class="el-icon-user"></i> {{model.author}}</span>
@@ -12,15 +17,19 @@
 </template>
 
 <script>
-
 export default {
-    name: 'KnowledgeViewPdf',
+    name: 'KnowledgeViewOther',
     props: {
         model: Object
     },
+    data(){
+        return {
+            loading: true
+        }   
+    },
     computed:{
         src(){
-            return `/static${this.model.fullname}`;
+            return `/static/assets/images/files/png/${this.model.ftype}.png`;
         }
     },
     filters:{
@@ -32,15 +41,21 @@ export default {
                 return window.moment(item.vtime).format(window.global.register.format);
             }
         }
+    },
+    created(){
+        this.onDownload();
+    },
+    methods:{
+        onDownload(){
+            let url = `/static${this.model.fullname}`;
+            window.open(url,"_blank");
+        }
     }
 }
 </script>
 
 <style scoped>
-    .el-container{
-        height: 80vh;
-    }
     .el-main{
-        overflow: hidden;
+        text-align: center;
     }
 </style>

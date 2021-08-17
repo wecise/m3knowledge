@@ -41,6 +41,7 @@
                 :close-on-click-modal="false"
                 :close-on-press-escape="false"
                 width="80%"
+                top="0"
                 center
                 custom-class="knowledge-view-dialog"
                 v-if="dialog.open.show">
@@ -49,6 +50,7 @@
                     <KnowledgeViewPdf :model="dialog.open.data" v-else-if="['pdf'].includes(dialog.open.data.ftype)"></KnowledgeViewPdf>
                     <KnowledgeViewPic :model="dialog.open.data" v-else-if="['png','gif','jpg','jpeg'].includes(dialog.open.data.ftype)"></KnowledgeViewPic>
                     <KnowledgeViewMedia :model="dialog.open.data" v-else-if="['mov','mp3','mp4','wav','swf'].includes(dialog.open.data.ftype)"></KnowledgeViewMedia>
+                    <KnowledgeViewOffice :model="dialog.open.data" v-else-if="['docx','doc','xlsx','xls','pptx','ppt'].includes(dialog.open.data.ftype)"></KnowledgeViewOffice>
                     <KnowledgeViewOther :model="dialog.open.data" v-else></KnowledgeViewOther>
                 </template>
         </el-dialog>
@@ -65,6 +67,7 @@ import KnowledgeViewPdf from './KnowledgeViewPdf';
 import KnowledgeViewMedia from './KnowledgeViewMedia';
 import KnowledgeViewPic from './KnowledgeViewPic';
 import KnowledgeViewOther from './KnowledgeViewOther';
+import KnowledgeViewOffice from './KnowledgeViewOffice';
 
 export default {
     name: 'index',
@@ -76,7 +79,8 @@ export default {
         KnowledgeViewPdf,
         KnowledgeViewMedia,
         KnowledgeViewPic,
-        KnowledgeViewOther
+        KnowledgeViewOther,
+        KnowledgeViewOffice
     },
     data(){
         return {
@@ -149,9 +153,9 @@ export default {
                     }
                 }
                 
-                /* fsHandler.fsUpdateAttrAsync(data.parent,data.name,attr).then((rtn)=>{
+                this.m3.dfsUpdateAttr({parent:data.parent,name:data.name,attr:attr}).then(rtn=>{
                     this.onSearch();
-                }); */
+                });
                 
             } catch(err){
                 console.error(err);
@@ -167,7 +171,17 @@ export default {
 </style>
 
 <style>
+    .el-dialog__wrapper{
+        overflow: hidden!important;;
+        height: 80vh!important;
+    }
     .knowledge-view-dialog.el-dialog{
-        margin-top: 0!important;
+        height: 100%;    
+    }
+    .knowledge-view-dialog.el-dialog > .el-dialog__body{
+        height: calc(100% - 80px); 
+    }
+    .knowledge-view-dialog.el-dialog > .el-dialog__body > .el-container{
+        height: 100%; 
     }
 </style>

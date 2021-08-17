@@ -16,6 +16,7 @@
     "moment": "^2.29.1",
     "split.js": "^1.6.2",
     "vue": "^2.6.11",
+    "vue-doc-preview": "^0.3.2",
     "vue-split-panel": "^1.0.4",
     "webpack-zip-plugin": "^0.1.6"
   },

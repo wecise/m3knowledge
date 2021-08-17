@@ -16,11 +16,16 @@
                             <div style="display: flex;
                                         height: auto;
                                         line-height: 40px;
-                                        padding: 0px 20px 0 0;"> 
+                                        padding: 0px 20px 0 0;
+                                        color: #777777;"> 
                                 <div style="width:90%;display: -webkit-box;">
-                                    <span><i class="el-icon-user"></i> {{item.author}}</span>
+                                    <span>
+                                        <i class="el-icon-user"></i> {{ item.author }}
+                                    </span>
                                     <el-divider direction="vertical"></el-divider>
-                                    编辑于  {{ item | pickTime }}
+                                    创建于  {{ item.ctime | pickTime }}
+                                    <el-divider direction="vertical"></el-divider>
+                                    编辑于  {{ item.mtime | pickTime }}
                                     <el-divider direction="vertical"></el-divider>
                                     位置 {{ item.parent }}
                                     <el-divider direction="vertical"></el-divider>
@@ -37,11 +42,16 @@
                             <div style="display: flex;
                                         height: auto;
                                         line-height: 40px;
-                                        padding: 0px 20px 0 0;"> 
+                                        padding: 0px 20px 0 0;
+                                        color: #777777;"> 
                                 <div style="width:90%;display: -webkit-box;">
-                                    <span><i class="el-icon-user"></i> {{item.author}}</span>
+                                    <span>
+                                        <i class="el-icon-user"></i> {{item.author}}
+                                    </span>
                                     <el-divider direction="vertical"></el-divider>
-                                    编辑于 {{ item | pickTime }}
+                                    创建于  {{ item.ctime | pickTime }}
+                                    <el-divider direction="vertical"></el-divider>
+                                    编辑于  {{ item.mtime | pickTime }}
                                     <el-divider direction="vertical"></el-divider>
                                     位置 {{ item.parent }}
                                     <el-divider direction="vertical"></el-divider>
@@ -85,13 +95,12 @@ export default {
         }
     },
     filters: {
-        pickTime(item){
+        pickTime(time){
             
             try{
-                let mtime = item.mtime;
-                return window.moment(mtime).format(window.global.register.format);
+                return window.moment(time).format('YYYY-MM-DD HH:MM:SS');
             } catch(err){
-                return window.moment(item.vtime).format(window.global.register.format);
+                return window.moment().format('YYYY-MM-DD HH:MM:SS');
             }
         },
         pickTags(item){
